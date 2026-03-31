@@ -10,6 +10,11 @@ Purpose:
 
 The public PyPI package does not ship the protected ManifestGuard code. Instead, it provides a CLI that can fetch the latest protected wheel from this repository's `release` branch and install it into the current virtual environment or user site.
 
+Versioning rule:
+
+- The public bootstrap package should normally use the same version as the protected ManifestGuard payload it installs.
+- If the bootstrap wrapper needs a packaging-only fix without a payload change, use a post-release such as `1.6.25.post1`.
+
 ## Commands
 
 Create a local editable install of the bootstrap package:
@@ -24,6 +29,19 @@ Show the protected payload manifest configured for download:
 manifestguard show-manifest
 ```
 
+Show the manifest for a specific protected version:
+
+```powershell
+manifestguard show-manifest --payload-version 1.6.25
+```
+
+Check whether the selected payload is newer than the currently installed `manifestguard` version:
+
+```powershell
+manifestguard check-update
+manifestguard check-update --payload-version 1.6.25
+```
+
 Install the protected payload into the active virtual environment if present, otherwise user-wide:
 
 ```powershell
@@ -35,6 +53,7 @@ Force a specific target mode:
 ```powershell
 manifestguard install-protected --venv
 manifestguard install-protected --user
+manifestguard install-protected --payload-version 1.6.25
 ```
 
 ## Release Branch Layout
@@ -48,10 +67,17 @@ manifestguard/
     manifestguard-<version>-py3-none-any.whl
     release.json
     SHA256SUMS.txt
+  <version>/
+    manifest.json
+    manifestguard-<version>-py3-none-any.whl
+    release.json
+    SHA256SUMS.txt
 ```
 
-`manifest.json` is the bootstrap entrypoint and must include the wheel URL and SHA256 hash.
+`manifestguard/latest/manifest.json` is the default bootstrap entrypoint.
+Version-specific commands such as `--payload-version 1.6.25` resolve to `manifestguard/1.6.25/manifest.json`.
+Each `manifest.json` must include the wheel URL and SHA256 hash.
 
 ## Helper Script
 
-Use `tools/publish_release_payload.ps1` while checked out to the `release` branch to copy a protected packet from the releaser output into the branch layout and generate `manifest.json`.
+Use `tools/publish_release_payload.ps1` while checked out to the `release` branch to copy a protected packet from the releaser output into the branch layout and generate both the `latest` and version-specific manifests.

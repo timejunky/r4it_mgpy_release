@@ -10,8 +10,12 @@ from manifestguard_bootstrap.installer import (
     PayloadManifest,
     build_pip_install_command,
     build_raw_manifest_url,
+    build_version_manifest_path,
+    compare_versions,
     detect_install_mode,
     fetch_manifest,
+    get_update_status,
+    resolve_manifest_path,
     sha256_of_file,
 )
 
@@ -22,6 +26,15 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(
             url,
             "https://raw.githubusercontent.com/timejunky/r4it_mgpy_release/release/manifestguard/latest/manifest.json",
+        )
+
+    def test_build_version_manifest_path(self) -> None:
+        self.assertEqual(build_version_manifest_path("1.6.25"), "manifestguard/1.6.25/manifest.json")
+
+    def test_resolve_manifest_path_prefers_payload_version(self) -> None:
+        self.assertEqual(
+            resolve_manifest_path("manifestguard/latest/manifest.json", "1.6.25"),
+            "manifestguard/1.6.25/manifest.json",
         )
 
     def test_detect_install_mode_prefers_venv_when_active(self) -> None:
@@ -48,6 +61,33 @@ class InstallerTests(unittest.TestCase):
                 sha256_of_file(sample),
                 "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
             )
+
+    def test_compare_versions(self) -> None:
+        self.assertLess(compare_versions("1.6.24", "1.6.25"), 0)
+        self.assertEqual(compare_versions("1.6.25", "1.6.25"), 0)
+        self.assertGreater(compare_versions("1.6.26", "1.6.25"), 0)
+
+    def test_get_update_status_for_missing_installation(self) -> None:
+        self.assertEqual(
+            get_update_status("1.6.25", None),
+            {
+                "installed_version": None,
+                "target_version": "1.6.25",
+                "update_available": True,
+                "status": "not-installed",
+            },
+        )
+
+    def test_get_update_status_for_available_update(self) -> None:
+        self.assertEqual(
+            get_update_status("1.6.25", "1.6.24"),
+            {
+                "installed_version": "1.6.24",
+                "target_version": "1.6.25",
+                "update_available": True,
+                "status": "update-available",
+            },
+        )
 
     def test_fetch_manifest(self) -> None:
         payload = {

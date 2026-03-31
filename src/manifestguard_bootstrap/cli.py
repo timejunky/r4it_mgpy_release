@@ -12,13 +12,19 @@ from .installer import (
     build_raw_manifest_url,
     detect_install_mode,
     fetch_manifest,
+    get_update_status,
     install_payload,
+    resolve_manifest_path,
 )
 
 
 def _add_common_manifest_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--repository", default=DEFAULT_REPOSITORY, help="GitHub repository slug")
     parser.add_argument("--branch", default=DEFAULT_BRANCH, help="Git branch hosting the protected payload")
+    parser.add_argument(
+        "--payload-version",
+        help="Payload version selector, for example '1.6.25' or 'latest'",
+    )
     parser.add_argument(
         "--manifest-path",
         default=DEFAULT_MANIFEST_PATH,
@@ -34,6 +40,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     show_manifest = subparsers.add_parser("show-manifest", help="Show the protected payload manifest")
     _add_common_manifest_args(show_manifest)
+
+    check_update = subparsers.add_parser(
+        "check-update",
+        help="Compare the installed ManifestGuard version against the selected protected payload manifest",
+    )
+    _add_common_manifest_args(check_update)
 
     install_protected = subparsers.add_parser(
         "install-protected",
@@ -51,17 +63,28 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    manifest_url = build_raw_manifest_url(args.repository, args.branch, args.manifest_path)
+    manifest_path = resolve_manifest_path(args.manifest_path, getattr(args, "payload_version", None))
+    manifest_url = build_raw_manifest_url(args.repository, args.branch, manifest_path)
     manifest = fetch_manifest(manifest_url)
 
     if args.command == "show-manifest":
         payload = {
             "manifest_url": manifest_url,
+            "manifest_path": manifest_path,
             "version": manifest.version,
             "wheel_url": manifest.wheel_url,
             "sha256": manifest.sha256,
             "python_requires": manifest.python_requires,
             "notes": manifest.notes,
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    if args.command == "check-update":
+        payload = {
+            "manifest_url": manifest_url,
+            "manifest_path": manifest_path,
+            **get_update_status(manifest.version),
         }
         print(json.dumps(payload, indent=2))
         return 0

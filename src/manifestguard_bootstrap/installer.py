@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
 import subprocess
@@ -12,7 +13,9 @@ from pathlib import Path
 
 DEFAULT_REPOSITORY = "timejunky/r4it_mgpy_release"
 DEFAULT_BRANCH = "release"
+DEFAULT_MANIFEST_ROOT = "manifestguard"
 DEFAULT_MANIFEST_PATH = "manifestguard/latest/manifest.json"
+_MISSING = object()
 
 
 @dataclass(frozen=True)
@@ -22,6 +25,22 @@ class PayloadManifest:
     sha256: str
     python_requires: str | None = None
     notes: str | None = None
+
+
+def build_version_manifest_path(
+    payload_version: str,
+    manifest_root: str = DEFAULT_MANIFEST_ROOT,
+) -> str:
+    normalized_version = payload_version.strip()
+    if not normalized_version:
+        raise ValueError("payload_version must not be empty.")
+    return f"{manifest_root}/{normalized_version}/manifest.json"
+
+
+def resolve_manifest_path(manifest_path: str, payload_version: str | None = None) -> str:
+    if payload_version:
+        return build_version_manifest_path(payload_version)
+    return manifest_path
 
 
 def build_raw_manifest_url(
@@ -42,6 +61,63 @@ def fetch_manifest(url: str, timeout: int = 30) -> PayloadManifest:
         python_requires=payload.get("python_requires"),
         notes=payload.get("notes"),
     )
+
+
+def get_installed_manifestguard_version() -> str | None:
+    try:
+        return importlib.metadata.version("manifestguard")
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def compare_versions(left: str, right: str) -> int:
+    def normalize_part(part: str) -> tuple[int, int | str]:
+        return (0, int(part)) if part.isdigit() else (1, part)
+
+    left_parts = [normalize_part(part) for part in left.split(".")]
+    right_parts = [normalize_part(part) for part in right.split(".")]
+    max_len = max(len(left_parts), len(right_parts))
+    padding = (0, 0)
+    left_parts.extend([padding] * (max_len - len(left_parts)))
+    right_parts.extend([padding] * (max_len - len(right_parts)))
+    if left_parts < right_parts:
+        return -1
+    if left_parts > right_parts:
+        return 1
+    return 0
+
+
+def get_update_status(
+    target_version: str,
+    installed_version: str | None | object = _MISSING,
+) -> dict[str, str | bool | None]:
+    if installed_version is _MISSING:
+        installed_version = get_installed_manifestguard_version()
+    if installed_version is None:
+        return {
+            "installed_version": None,
+            "target_version": target_version,
+            "update_available": True,
+            "status": "not-installed",
+        }
+
+    comparison = compare_versions(installed_version, target_version)
+    if comparison < 0:
+        status = "update-available"
+        update_available = True
+    elif comparison == 0:
+        status = "up-to-date"
+        update_available = False
+    else:
+        status = "ahead-of-target"
+        update_available = False
+
+    return {
+        "installed_version": installed_version,
+        "target_version": target_version,
+        "update_available": update_available,
+        "status": status,
+    }
 
 
 def detect_install_mode(use_user: bool, use_venv: bool) -> str:
