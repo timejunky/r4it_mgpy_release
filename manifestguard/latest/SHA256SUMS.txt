@@ -1,0 +1,1 @@
+a93b572c0db34196c20b419694455ca7eefa69aefb1d7711600cf7611f0eb716  manifestguard-1.6.25-py3-none-any.whl
