@@ -5,10 +5,15 @@ This branch contains the protected ManifestGuard payload only.
 Layout:
 
 ```text
-manifestguard/latest/
-  manifest.json
-  manifestguard-1.6.25-py3-none-any.whl
-  SHA256SUMS.txt
+manifestguard/
+  latest/
+    manifest.json
+    manifestguard-1.6.25-py3-none-any.whl
+    SHA256SUMS.txt
+  1.6.25/
+    manifest.json
+    manifestguard-1.6.25-py3-none-any.whl
+    SHA256SUMS.txt
 ```
 
-The public bootstrap package downloads `manifest.json` from this branch and then installs the referenced protected wheel.
+The public bootstrap package downloads `manifestguard/latest/manifest.json` by default and can resolve a version-specific manifest such as `manifestguard/1.6.25/manifest.json` when the user selects a payload version.
