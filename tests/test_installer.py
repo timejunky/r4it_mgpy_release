@@ -131,7 +131,7 @@ class InstallerTests(unittest.TestCase):
         ), mock.patch("manifestguard_bootstrap.installer.tempfile.TemporaryDirectory") as temp_dir, mock.patch(
             "manifestguard_bootstrap.installer.download_file"
         ), mock.patch("manifestguard_bootstrap.installer.sha256_of_file", return_value="abc123"):
-            temp_dir.return_value.__enter__.return_value = "C:/temp/bootstrap"
+            temp_dir.return_value.__enter__.return_value = "temp/bootstrap"
             temp_dir.return_value.__exit__.return_value = None
             command = install_payload(manifest, "venv", python_executable="python", dry_run=True)
 
@@ -149,7 +149,7 @@ class InstallerTests(unittest.TestCase):
         ), mock.patch("manifestguard_bootstrap.installer.tempfile.TemporaryDirectory") as temp_dir, mock.patch(
             "manifestguard_bootstrap.installer.download_file"
         ), mock.patch("manifestguard_bootstrap.installer.sha256_of_file", return_value="abc123"):
-            temp_dir.return_value.__enter__.return_value = "C:/temp/bootstrap"
+            temp_dir.return_value.__enter__.return_value = "temp/bootstrap"
             temp_dir.return_value.__exit__.return_value = None
             command = install_payload(manifest, "venv", python_executable="python", dry_run=True)
 

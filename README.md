@@ -20,7 +20,7 @@ Versioning rule:
 Create a local editable install of the bootstrap package:
 
 ```powershell
-f:\r4it\dev\r4it_mgpy_release\.venv\Scripts\python.exe -m pip install -e .
+python -m pip install -e .
 ```
 
 Show the protected payload manifest configured for download:

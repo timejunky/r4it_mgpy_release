@@ -17,11 +17,11 @@ from manifestguard_bootstrap.cli import (
 
 class CliTests(unittest.TestCase):
     def test_resolve_python_handoff_executable_prefers_sibling_python(self) -> None:
-        with mock.patch("manifestguard_bootstrap.cli.sys.executable", "C:/venv/Scripts/manifestguard.exe"), mock.patch(
+        with mock.patch("manifestguard_bootstrap.cli.sys.executable", "venv/Scripts/manifestguard.exe"), mock.patch(
             "manifestguard_bootstrap.cli.Path.exists",
             return_value=True,
         ):
-            self.assertEqual(_resolve_python_handoff_executable(), "C:\\venv\\Scripts\\python.exe")
+            self.assertEqual(_resolve_python_handoff_executable(), "venv\\Scripts\\python.exe")
 
     def test_resolve_python_handoff_executable_falls_back_to_base_executable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -54,7 +54,7 @@ class CliTests(unittest.TestCase):
             self.assertFalse(_should_handoff_install(args))
 
     def test_handoff_install_spawns_python_module_with_env_marker(self) -> None:
-        with mock.patch("manifestguard_bootstrap.cli._resolve_python_handoff_executable", return_value="C:/venv/Scripts/python.exe"), mock.patch(
+        with mock.patch("manifestguard_bootstrap.cli._resolve_python_handoff_executable", return_value="venv/Scripts/python.exe"), mock.patch(
             "manifestguard_bootstrap.cli.subprocess.Popen"
         ) as popen, mock.patch.dict(os.environ, {}, clear=True):
             result = _handoff_install(["install-protected", "--venv"])
@@ -65,7 +65,7 @@ class CliTests(unittest.TestCase):
         env = popen.call_args.kwargs["env"]
         self.assertEqual(
             command,
-            ["C:/venv/Scripts/python.exe", "-m", "manifestguard_bootstrap.cli", "install-protected", "--venv"],
+            ["venv/Scripts/python.exe", "-m", "manifestguard_bootstrap.cli", "install-protected", "--venv"],
         )
         self.assertEqual(env[_WINDOWS_INSTALL_HANDOFF_ENV], "1")
 
