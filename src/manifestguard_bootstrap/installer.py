@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.metadata
+import importlib.util
 import json
 import os
 import subprocess
@@ -70,6 +71,17 @@ def get_installed_manifestguard_version() -> str | None:
         return None
 
 
+def detect_installed_manifestguard_variant() -> str:
+    has_payload_module = importlib.util.find_spec("manifestguard") is not None
+    has_bootstrap_module = importlib.util.find_spec("manifestguard_bootstrap") is not None
+
+    if has_payload_module:
+        return "payload"
+    if has_bootstrap_module:
+        return "bootstrap-only"
+    return "distribution-only"
+
+
 def compare_versions(left: str, right: str) -> int:
     def normalize_part(part: str) -> tuple[int, int | str]:
         return (0, int(part)) if part.isdigit() else (1, part)
@@ -99,6 +111,15 @@ def get_update_status(
             "target_version": target_version,
             "update_available": True,
             "status": "not-installed",
+        }
+
+    installed_variant = detect_installed_manifestguard_variant()
+    if installed_variant == "bootstrap-only":
+        return {
+            "installed_version": installed_version,
+            "target_version": target_version,
+            "update_available": True,
+            "status": "bootstrap-only",
         }
 
     comparison = compare_versions(installed_version, target_version)

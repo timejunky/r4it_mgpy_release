@@ -12,6 +12,7 @@ from manifestguard_bootstrap.installer import (
     build_raw_manifest_url,
     build_version_manifest_path,
     compare_versions,
+    detect_installed_manifestguard_variant,
     detect_install_mode,
     fetch_manifest,
     get_update_status,
@@ -29,12 +30,12 @@ class InstallerTests(unittest.TestCase):
         )
 
     def test_build_version_manifest_path(self) -> None:
-        self.assertEqual(build_version_manifest_path("1.6.25"), "manifestguard/1.6.25/manifest.json")
+        self.assertEqual(build_version_manifest_path("1.6.26"), "manifestguard/1.6.26/manifest.json")
 
     def test_resolve_manifest_path_prefers_payload_version(self) -> None:
         self.assertEqual(
-            resolve_manifest_path("manifestguard/latest/manifest.json", "1.6.25"),
-            "manifestguard/1.6.25/manifest.json",
+            resolve_manifest_path("manifestguard/latest/manifest.json", "1.6.26"),
+            "manifestguard/1.6.26/manifest.json",
         )
 
     def test_detect_install_mode_prefers_venv_when_active(self) -> None:
@@ -63,27 +64,47 @@ class InstallerTests(unittest.TestCase):
             )
 
     def test_compare_versions(self) -> None:
-        self.assertLess(compare_versions("1.6.24", "1.6.25"), 0)
-        self.assertEqual(compare_versions("1.6.25", "1.6.25"), 0)
-        self.assertGreater(compare_versions("1.6.26", "1.6.25"), 0)
+        self.assertLess(compare_versions("1.6.25", "1.6.26"), 0)
+        self.assertEqual(compare_versions("1.6.26", "1.6.26"), 0)
+        self.assertGreater(compare_versions("1.6.27", "1.6.26"), 0)
 
     def test_get_update_status_for_missing_installation(self) -> None:
         self.assertEqual(
-            get_update_status("1.6.25", None),
+            get_update_status("1.6.26", None),
             {
                 "installed_version": None,
-                "target_version": "1.6.25",
+                "target_version": "1.6.26",
                 "update_available": True,
                 "status": "not-installed",
             },
         )
 
+    def test_detect_installed_manifestguard_variant_bootstrap_only(self) -> None:
+        with mock.patch("manifestguard_bootstrap.installer.importlib.util.find_spec") as find_spec:
+            find_spec.side_effect = lambda name: object() if name == "manifestguard_bootstrap" else None
+            self.assertEqual(detect_installed_manifestguard_variant(), "bootstrap-only")
+
+    def test_get_update_status_for_bootstrap_only_installation(self) -> None:
+        with mock.patch(
+            "manifestguard_bootstrap.installer.detect_installed_manifestguard_variant",
+            return_value="bootstrap-only",
+        ):
+            self.assertEqual(
+                get_update_status("1.6.26", "1.6.26"),
+                {
+                    "installed_version": "1.6.26",
+                    "target_version": "1.6.26",
+                    "update_available": True,
+                    "status": "bootstrap-only",
+                },
+            )
+
     def test_get_update_status_for_available_update(self) -> None:
         self.assertEqual(
-            get_update_status("1.6.25", "1.6.24"),
+            get_update_status("1.6.26", "1.6.25"),
             {
-                "installed_version": "1.6.24",
-                "target_version": "1.6.25",
+                "installed_version": "1.6.25",
+                "target_version": "1.6.26",
                 "update_available": True,
                 "status": "update-available",
             },
@@ -91,8 +112,8 @@ class InstallerTests(unittest.TestCase):
 
     def test_fetch_manifest(self) -> None:
         payload = {
-            "version": "1.6.25",
-            "wheel_url": "https://example.invalid/manifestguard-1.6.25.whl",
+            "version": "1.6.26",
+            "wheel_url": "https://example.invalid/manifestguard-1.6.26.whl",
             "sha256": "abc123",
         }
         data = json.dumps(payload).encode("utf-8")
@@ -105,7 +126,7 @@ class InstallerTests(unittest.TestCase):
             manifest = fetch_manifest("https://example.invalid/manifest.json")
         self.assertEqual(
             manifest,
-            PayloadManifest(version="1.6.25", wheel_url="https://example.invalid/manifestguard-1.6.25.whl", sha256="abc123"),
+            PayloadManifest(version="1.6.26", wheel_url="https://example.invalid/manifestguard-1.6.26.whl", sha256="abc123"),
         )
 
 

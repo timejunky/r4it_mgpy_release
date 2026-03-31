@@ -80,6 +80,13 @@ foreach ($targetRoot in @($latestRoot, $versionRoot)) {
 }
 
 $wheelHash = (Get-FileHash -LiteralPath $wheel.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+if (-not (Test-Path -LiteralPath $shaFile)) {
+  $shaLine = "$wheelHash  $($wheel.Name)"
+  foreach ($targetRoot in @($latestRoot, $versionRoot)) {
+    Set-Content -LiteralPath (Join-Path $targetRoot 'SHA256SUMS.txt') -Value $shaLine -Encoding utf8
+  }
+}
+
 Write-ManifestFile -TargetRoot $latestRoot -WheelName $wheel.Name -WheelHash $wheelHash -Version $version -Repository $Repository -Branch $Branch -RelativeRoot "manifestguard/latest" -Notes $Notes
 Write-ManifestFile -TargetRoot $versionRoot -WheelName $wheel.Name -WheelHash $wheelHash -Version $version -Repository $Repository -Branch $Branch -RelativeRoot "manifestguard/$version" -Notes $Notes
 
