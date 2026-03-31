@@ -36,6 +36,21 @@ function Write-ManifestFile {
   Write-Host "Wheel URL: $wheelUrl" -ForegroundColor DarkGray
 }
 
+function Copy-ItemIfDifferent {
+  param(
+    [Parameter(Mandatory = $true)][string]$SourcePath,
+    [Parameter(Mandatory = $true)][string]$DestinationPath
+  )
+
+  $resolvedSource = [System.IO.Path]::GetFullPath($SourcePath)
+  $resolvedDestination = [System.IO.Path]::GetFullPath($DestinationPath)
+  if ($resolvedSource -eq $resolvedDestination) {
+    return
+  }
+
+  Copy-Item -LiteralPath $resolvedSource -Destination $resolvedDestination -Force
+}
+
 $resolvedSource = (Resolve-Path -LiteralPath $SourceDir).Path
 $resolvedReleaseRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\manifestguard'))
 if ($ReleaseRoot) {
@@ -55,12 +70,12 @@ $versionRoot = Join-Path $resolvedReleaseRoot $version
 
 foreach ($targetRoot in @($latestRoot, $versionRoot)) {
   New-Item -ItemType Directory -Force -Path $targetRoot | Out-Null
-  Copy-Item -LiteralPath $wheel.FullName -Destination (Join-Path $targetRoot $wheel.Name) -Force
+  Copy-ItemIfDifferent -SourcePath $wheel.FullName -DestinationPath (Join-Path $targetRoot $wheel.Name)
   if (Test-Path -LiteralPath $releaseJson) {
-    Copy-Item -LiteralPath $releaseJson -Destination (Join-Path $targetRoot 'release.json') -Force
+    Copy-ItemIfDifferent -SourcePath $releaseJson -DestinationPath (Join-Path $targetRoot 'release.json')
   }
   if (Test-Path -LiteralPath $shaFile) {
-    Copy-Item -LiteralPath $shaFile -Destination (Join-Path $targetRoot 'SHA256SUMS.txt') -Force
+    Copy-ItemIfDifferent -SourcePath $shaFile -DestinationPath (Join-Path $targetRoot 'SHA256SUMS.txt')
   }
 }
 
