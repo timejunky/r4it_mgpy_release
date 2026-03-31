@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
@@ -26,9 +27,30 @@ _WINDOWS_INSTALL_HANDOFF_ENV = "MANIFESTGUARD_BOOTSTRAP_INSTALL_HANDOFF"
 
 def _resolve_python_handoff_executable() -> str:
     executable = Path(sys.executable)
-    candidate = executable.with_name("python.exe")
-    if candidate.exists():
-        return str(candidate)
+
+    candidates: list[Path] = []
+    candidates.append(executable.with_name("python.exe"))
+
+    base_executable = getattr(sys, "_base_executable", None)
+    if base_executable:
+        candidates.append(Path(base_executable))
+
+    base_prefix = Path(sys.base_prefix)
+    candidates.append(base_prefix / "python.exe")
+    candidates.append(base_prefix / "Scripts" / "python.exe")
+
+    prefix = Path(sys.prefix)
+    candidates.append(prefix / "python.exe")
+    candidates.append(prefix / "Scripts" / "python.exe")
+
+    which_python = shutil.which("python")
+    if which_python:
+        candidates.append(Path(which_python))
+
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+
     return sys.executable
 
 

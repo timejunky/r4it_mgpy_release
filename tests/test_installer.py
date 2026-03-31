@@ -105,15 +105,19 @@ class InstallerTests(unittest.TestCase):
             )
 
     def test_get_update_status_for_available_update(self) -> None:
-        self.assertEqual(
-            get_update_status("1.6.26", "1.6.25"),
-            {
-                "installed_version": "1.6.25",
-                "target_version": "1.6.26",
-                "update_available": True,
-                "status": "update-available",
-            },
-        )
+        with mock.patch(
+            "manifestguard_bootstrap.installer.detect_installed_manifestguard_variant",
+            return_value="payload",
+        ):
+            self.assertEqual(
+                get_update_status("1.6.26", "1.6.25"),
+                {
+                    "installed_version": "1.6.25",
+                    "target_version": "1.6.26",
+                    "update_available": True,
+                    "status": "update-available",
+                },
+            )
 
     def test_install_payload_forces_reinstall_for_same_version_bootstrap(self) -> None:
         manifest = PayloadManifest(
