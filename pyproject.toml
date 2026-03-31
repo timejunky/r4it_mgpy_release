@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manifestguard"
-version = "1.6.26"
+version = "1.6.26.post1"
 description = "Public bootstrap installer for the protected ManifestGuard release payload"
 readme = "README.md"
 requires-python = ">=3.10"
