@@ -16,6 +16,7 @@ from manifestguard_bootstrap.installer import (
     detect_install_mode,
     fetch_manifest,
     get_update_status,
+    install_payload,
     resolve_manifest_path,
     sha256_of_file,
 )
@@ -53,6 +54,10 @@ class InstallerTests(unittest.TestCase):
     def test_build_pip_install_command_for_user(self) -> None:
         command = build_pip_install_command("python", Path("payload.whl"), "user")
         self.assertEqual(command[-1], "--user")
+
+    def test_build_pip_install_command_force_reinstall(self) -> None:
+        command = build_pip_install_command("python", Path("payload.whl"), "venv", force_reinstall=True)
+        self.assertIn("--force-reinstall", command)
 
     def test_sha256_of_file(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -109,6 +114,42 @@ class InstallerTests(unittest.TestCase):
                 "status": "update-available",
             },
         )
+
+    def test_install_payload_forces_reinstall_for_same_version_bootstrap(self) -> None:
+        manifest = PayloadManifest(
+            version="1.6.26",
+            wheel_url="https://example.invalid/manifestguard-1.6.26.whl",
+            sha256="abc123",
+        )
+        with mock.patch("manifestguard_bootstrap.installer.get_installed_manifestguard_version", return_value="1.6.26"), mock.patch(
+            "manifestguard_bootstrap.installer.detect_installed_manifestguard_variant",
+            return_value="bootstrap-only",
+        ), mock.patch("manifestguard_bootstrap.installer.tempfile.TemporaryDirectory") as temp_dir, mock.patch(
+            "manifestguard_bootstrap.installer.download_file"
+        ), mock.patch("manifestguard_bootstrap.installer.sha256_of_file", return_value="abc123"):
+            temp_dir.return_value.__enter__.return_value = "C:/temp/bootstrap"
+            temp_dir.return_value.__exit__.return_value = None
+            command = install_payload(manifest, "venv", python_executable="python", dry_run=True)
+
+        self.assertIn("--force-reinstall", command)
+
+    def test_install_payload_skips_force_reinstall_for_actual_payload(self) -> None:
+        manifest = PayloadManifest(
+            version="1.6.26",
+            wheel_url="https://example.invalid/manifestguard-1.6.26.whl",
+            sha256="abc123",
+        )
+        with mock.patch("manifestguard_bootstrap.installer.get_installed_manifestguard_version", return_value="1.6.26"), mock.patch(
+            "manifestguard_bootstrap.installer.detect_installed_manifestguard_variant",
+            return_value="payload",
+        ), mock.patch("manifestguard_bootstrap.installer.tempfile.TemporaryDirectory") as temp_dir, mock.patch(
+            "manifestguard_bootstrap.installer.download_file"
+        ), mock.patch("manifestguard_bootstrap.installer.sha256_of_file", return_value="abc123"):
+            temp_dir.return_value.__enter__.return_value = "C:/temp/bootstrap"
+            temp_dir.return_value.__exit__.return_value = None
+            command = install_payload(manifest, "venv", python_executable="python", dry_run=True)
+
+        self.assertNotIn("--force-reinstall", command)
 
     def test_fetch_manifest(self) -> None:
         payload = {

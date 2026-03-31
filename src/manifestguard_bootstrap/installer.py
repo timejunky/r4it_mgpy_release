@@ -171,8 +171,15 @@ def download_file(url: str, destination: Path, timeout: int = 60) -> Path:
     return destination
 
 
-def build_pip_install_command(python_executable: str, wheel_path: Path, mode: str) -> list[str]:
+def build_pip_install_command(
+    python_executable: str,
+    wheel_path: Path,
+    mode: str,
+    force_reinstall: bool = False,
+) -> list[str]:
     command = [python_executable, "-m", "pip", "install", "--upgrade", str(wheel_path)]
+    if force_reinstall:
+        command.append("--force-reinstall")
     if mode == "user":
         command.append("--user")
     return command
@@ -185,6 +192,9 @@ def install_payload(
     dry_run: bool = False,
 ) -> list[str]:
     python_executable = python_executable or sys.executable
+    installed_version = get_installed_manifestguard_version()
+    installed_variant = detect_installed_manifestguard_variant()
+    force_reinstall = installed_variant == "bootstrap-only" and installed_version == manifest.version
     with tempfile.TemporaryDirectory(prefix="manifestguard-bootstrap-") as temp_dir:
         wheel_name = Path(manifest.wheel_url).name
         wheel_path = Path(temp_dir) / wheel_name
@@ -194,7 +204,12 @@ def install_payload(
             raise RuntimeError(
                 f"Downloaded wheel hash mismatch. expected={manifest.sha256} actual={actual_hash}"
             )
-        command = build_pip_install_command(python_executable, wheel_path, mode)
+        command = build_pip_install_command(
+            python_executable,
+            wheel_path,
+            mode,
+            force_reinstall=force_reinstall,
+        )
         if dry_run:
             return command
         subprocess.run(command, check=True)

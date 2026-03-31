@@ -1,6 +1,6 @@
-# r4it_mgpy_release
+# manifestguard
 
-Public bootstrap package for `manifestguard`.
+Public bootstrap package for the protected ManifestGuard payload.
 
 Purpose:
 
