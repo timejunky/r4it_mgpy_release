@@ -1,1 +1,1 @@
-﻿1304ece599f6fed6b03feac349370adacf17cbd79ad3eaf376ab0466fec2e4a0  manifestguard-1.6.26-py3-none-any.whl
+﻿25a344d1d93e54a7b87b29857ef3bff19e3b4be4de6ca429bd259365ad828495  manifestguard-1.6.26-py3-none-any.whl
