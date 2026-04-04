@@ -1,6 +1,6 @@
 ﻿{
     "version":  "1.6.32",
-    "wheel_url":  "https://raw.githubusercontent.com/timejunky/r4it_mgpy_release/release/manifestguard/latest/manifestguard-1.6.32-py3-none-any.whl",
+    "wheel_url":  "https://raw.githubusercontent.com/timejunky/r4it_mgpy_release/release/manifestguard/1.6.32/manifestguard-1.6.32-py3-none-any.whl",
     "sha256":  "87751588a900efdad59ec8076f9364df1b2ab05a31e4143863d524321548a2e8",
     "python_requires":  "\u003e=3.10",
     "notes":  "Protected PyArmor wheel for ManifestGuard."
