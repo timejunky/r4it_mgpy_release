@@ -9,6 +9,8 @@ from unittest import mock
 
 from manifestguard_bootstrap.cli import (
     _WINDOWS_INSTALL_HANDOFF_ENV,
+    _detect_ui_language,
+    _print_first_run_guidance_once,
     _handoff_install,
     _resolve_python_handoff_executable,
     _should_handoff_install,
@@ -16,6 +18,56 @@ from manifestguard_bootstrap.cli import (
 
 
 class CliTests(unittest.TestCase):
+    def test_detect_ui_language_prefers_manifestguard_lang(self) -> None:
+        with mock.patch.dict(os.environ, {"MANIFESTGUARD_LANG": "tr_TR"}, clear=True), mock.patch(
+            "manifestguard_bootstrap.cli.locale.getlocale",
+            return_value=("de_DE", "UTF-8"),
+        ):
+            self.assertEqual(_detect_ui_language(), "tr")
+
+    def test_detect_ui_language_from_env(self) -> None:
+        with mock.patch.dict(os.environ, {"LANG": "de_DE.UTF-8"}, clear=True), mock.patch(
+            "manifestguard_bootstrap.cli.locale.getlocale",
+            return_value=("en_US", "UTF-8"),
+        ):
+            self.assertEqual(_detect_ui_language(), "de")
+
+    def test_detect_ui_language_falls_back_to_english(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
+            "manifestguard_bootstrap.cli.locale.getlocale",
+            return_value=("es_ES", "UTF-8"),
+        ):
+            self.assertEqual(_detect_ui_language(), "en")
+
+    def test_print_first_run_guidance_once_prints_and_creates_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            marker = Path(tmp_dir) / "bootstrap-first-run.txt"
+            with mock.patch("manifestguard_bootstrap.cli._first_run_marker_path", return_value=marker), mock.patch(
+                "manifestguard_bootstrap.cli._detect_ui_language",
+                return_value="fr",
+            ), mock.patch("builtins.print") as print_mock:
+                _print_first_run_guidance_once()
+
+            self.assertTrue(marker.exists())
+            self.assertGreaterEqual(print_mock.call_count, 7)
+            first_line = print_mock.call_args_list[0].args[0]
+            self.assertIn("bootstrap ManifestGuard", first_line)
+            printed_lines = [call.args[0] for call in print_mock.call_args_list]
+            self.assertTrue(any("check-update" in line for line in printed_lines))
+
+    def test_print_first_run_guidance_once_skips_when_marker_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            marker = Path(tmp_dir) / "bootstrap-first-run.txt"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text("exists", encoding="utf-8")
+
+            with mock.patch("manifestguard_bootstrap.cli._first_run_marker_path", return_value=marker), mock.patch(
+                "builtins.print"
+            ) as print_mock:
+                _print_first_run_guidance_once()
+
+            print_mock.assert_not_called()
+
     def test_resolve_python_handoff_executable_prefers_sibling_python(self) -> None:
         with mock.patch("manifestguard_bootstrap.cli.sys.executable", "venv/Scripts/manifestguard.exe"), mock.patch(
             "manifestguard_bootstrap.cli.Path.exists",

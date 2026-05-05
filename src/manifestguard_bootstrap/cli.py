@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import locale
 import os
 from pathlib import Path
 import shutil
@@ -23,6 +24,100 @@ from .installer import (
 )
 
 _WINDOWS_INSTALL_HANDOFF_ENV = "MANIFESTGUARD_BOOTSTRAP_INSTALL_HANDOFF"
+
+_FIRST_RUN_GUIDANCE_LINES: dict[str, list[str]] = {
+    "en": [
+        "ManifestGuard bootstrap is installed.",
+        "Recommended next step: manifestguard install-protected",
+        "For user-wide install: manifestguard install-protected --user",
+        "For current virtual environment: manifestguard install-protected --venv",
+        "Inspect payload metadata: manifestguard show-manifest",
+        "Check updates manually: manifestguard check-update",
+        "After protected install, verify runtime: python -m manifestguard --version",
+    ],
+    "de": [
+        "ManifestGuard Bootstrap ist installiert.",
+        "Empfohlener nächster Schritt: manifestguard install-protected",
+        "Für benutzerweite Installation: manifestguard install-protected --user",
+        "Für die aktuelle virtuelle Umgebung: manifestguard install-protected --venv",
+        "Payload-Metadaten anzeigen: manifestguard show-manifest",
+        "Updates manuell prüfen: manifestguard check-update",
+        "Nach Protected-Install Runtime prüfen: python -m manifestguard --version",
+    ],
+    "fr": [
+        "Le bootstrap ManifestGuard est installe.",
+        "Etape suivante recommandee: manifestguard install-protected",
+        "Pour une installation utilisateur: manifestguard install-protected --user",
+        "Pour l'environnement virtuel actif: manifestguard install-protected --venv",
+        "Afficher les metadonnees du payload: manifestguard show-manifest",
+        "Verifier les mises a jour manuellement: manifestguard check-update",
+        "Apres installation protegee, verifier le runtime: python -m manifestguard --version",
+    ],
+    "lb": [
+        "ManifestGuard Bootstrap ass installéiert.",
+        "Empfohlene nächste Schrëtt: manifestguard install-protected",
+        "Fir eng Benotzer-Installatioun: manifestguard install-protected --user",
+        "Fir dat aktuellt virtuellt Ëmfeld: manifestguard install-protected --venv",
+        "Payload-Metadonnéeën weisen: manifestguard show-manifest",
+        "Updates manuell iwwerpréiwen: manifestguard check-update",
+        "No der Protected-Installatioun Runtime iwwerpréiwen: python -m manifestguard --version",
+    ],
+    "tr": [
+        "ManifestGuard bootstrap kuruldu.",
+        "Onerilen sonraki adim: manifestguard install-protected",
+        "Kullanici kapsami kurulum icin: manifestguard install-protected --user",
+        "Mevcut sanal ortam icin: manifestguard install-protected --venv",
+        "Payload metaverisini goster: manifestguard show-manifest",
+        "Guncellemeleri elle kontrol et: manifestguard check-update",
+        "Korumali kurulumdan sonra runtime'i dogrula: python -m manifestguard --version",
+    ],
+}
+
+
+def _detect_ui_language() -> str:
+    preferred = os.environ.get("MANIFESTGUARD_LANG")
+    if preferred:
+        lang = preferred.split(".", 1)[0].split("_", 1)[0].lower()
+        if lang in _FIRST_RUN_GUIDANCE_LINES:
+            return lang
+
+    for env_name in ("LC_ALL", "LANG"):
+        raw = os.environ.get(env_name)
+        if raw:
+            lang = raw.split(".", 1)[0].split("_", 1)[0].lower()
+            if lang in _FIRST_RUN_GUIDANCE_LINES:
+                return lang
+
+    locale_value, _ = locale.getlocale()
+    if locale_value:
+        lang = locale_value.split("_", 1)[0].lower()
+        if lang in _FIRST_RUN_GUIDANCE_LINES:
+            return lang
+
+    return "en"
+
+
+def _first_run_marker_path() -> Path:
+    if os.name == "nt":
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            return Path(appdata) / "ManifestGuard" / "bootstrap-first-run.txt"
+    return Path.home() / ".manifestguard" / "bootstrap-first-run.txt"
+
+
+def _print_first_run_guidance_once() -> None:
+    marker = _first_run_marker_path()
+    if marker.exists():
+        return
+
+    for line in _FIRST_RUN_GUIDANCE_LINES[_detect_ui_language()]:
+        print(line)
+
+    try:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(__version__, encoding="utf-8")
+    except OSError:
+        return
 
 
 def _resolve_python_handoff_executable() -> str:
@@ -117,6 +212,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     argv = list(argv if argv is not None else sys.argv[1:])
+
+    _print_first_run_guidance_once()
 
     manifest_path = resolve_manifest_path(args.manifest_path, getattr(args, "payload_version", None))
     manifest_url = build_raw_manifest_url(args.repository, args.branch, manifest_path)
