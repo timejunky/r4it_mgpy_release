@@ -262,6 +262,12 @@ def main(argv: list[str] | None = None) -> int:
             return exc.returncode or 1
         if args.dry_run:
             print(" ".join(command))
+        else:
+            print(
+                "Protected payload installation completed. "
+                f"Bootstrap is now replaced by ManifestGuard payload {manifest.version}."
+            )
+            print("Verify with: py -3.12 -m manifestguard --version")
         return 0
 
     parser.error(f"Unsupported command: {args.command}")

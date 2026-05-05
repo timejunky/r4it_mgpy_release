@@ -77,6 +77,31 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 1)
         print_mock.assert_called_with("requires python 3.12")
 
+    def test_install_protected_prints_success_message_after_install(self) -> None:
+        manifest = PayloadManifest(
+            version="1.6.46",
+            wheel_url="https://example.invalid/manifestguard-1.6.46-cp312-cp312-win_amd64.whl",
+            sha256="abc123",
+            python_requires=">=3.12",
+        )
+        with mock.patch("manifestguard_bootstrap.cli._print_first_run_guidance_once"), mock.patch(
+            "manifestguard_bootstrap.cli.fetch_manifest",
+            return_value=manifest,
+        ), mock.patch(
+            "manifestguard_bootstrap.cli._should_handoff_install",
+            return_value=False,
+        ), mock.patch(
+            "manifestguard_bootstrap.cli.install_payload",
+            return_value=["python", "-m", "pip", "install", "payload.whl"],
+        ), mock.patch("builtins.print") as print_mock:
+            code = main(["install-protected", "--user"])
+
+        self.assertEqual(code, 0)
+        printed_lines = [call.args[0] for call in print_mock.call_args_list]
+        self.assertTrue(any("Protected payload installation completed." in line for line in printed_lines))
+        self.assertTrue(any("ManifestGuard payload 1.6.46" in line for line in printed_lines))
+        self.assertTrue(any("py -3.12 -m manifestguard --version" in line for line in printed_lines))
+
     def test_print_first_run_guidance_once_skips_when_marker_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             marker = Path(tmp_dir) / "bootstrap-first-run.txt"

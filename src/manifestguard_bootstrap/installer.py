@@ -61,8 +61,12 @@ def _assert_interpreter_matches_wheel(manifest: PayloadManifest, wheel_name: str
         f"Current Python: {sys.version_info.major}.{sys.version_info.minor} ({sys.executable})\n"
         f"Required by wheel: {required[0]}.{required[1]} ({wheel_name})\n"
         f"Manifest python_requires: {manifest.python_requires or 'n/a'}\n"
-        "Use Python 3.12 explicitly, for example:\n"
-        f"  py -3.12 -m manifestguard_bootstrap.cli install-protected {mode_flag}"
+        "To continue, use Python 3.12 and make sure the bootstrap package is installed there:\n"
+        "  py -3.12 -m pip install --user --upgrade manifestguard\n"
+        f"  py -3.12 -m manifestguard_bootstrap.cli install-protected {mode_flag}\n"
+        "Then verify:\n"
+        "  py -3.12 -m manifestguard --version\n"
+        f"Note: after install-protected, the public bootstrap package is replaced by the protected ManifestGuard payload version {manifest.version}."
     )
 
 

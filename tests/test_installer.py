@@ -180,7 +180,10 @@ class InstallerTests(unittest.TestCase):
 
         message = str(ctx.exception)
         self.assertIn("Required by wheel: 3.12", message)
+        self.assertIn("py -3.12 -m pip install --user --upgrade manifestguard", message)
         self.assertIn("py -3.12 -m manifestguard_bootstrap.cli install-protected --user", message)
+        self.assertIn("py -3.12 -m manifestguard --version", message)
+        self.assertIn("replaced by the protected ManifestGuard payload version 1.6.46", message)
 
     def test_fetch_manifest(self) -> None:
         payload = {
