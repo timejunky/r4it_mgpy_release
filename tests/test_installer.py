@@ -8,6 +8,7 @@ from unittest import mock
 
 from manifestguard_bootstrap.installer import (
     PayloadManifest,
+    _parse_cpython_tag_from_wheel_filename,
     build_pip_install_command,
     build_raw_manifest_url,
     build_version_manifest_path,
@@ -32,6 +33,13 @@ class InstallerTests(unittest.TestCase):
 
     def test_build_version_manifest_path(self) -> None:
         self.assertEqual(build_version_manifest_path("1.6.26"), "manifestguard/1.6.26/manifest.json")
+
+    def test_parse_cpython_tag_from_wheel_filename(self) -> None:
+        self.assertEqual(
+            _parse_cpython_tag_from_wheel_filename("manifestguard-1.6.46-cp312-cp312-win_amd64.whl"),
+            (3, 12),
+        )
+        self.assertIsNone(_parse_cpython_tag_from_wheel_filename("manifestguard-1.6.46-py3-none-any.whl"))
 
     def test_resolve_manifest_path_prefers_payload_version(self) -> None:
         self.assertEqual(
@@ -154,6 +162,25 @@ class InstallerTests(unittest.TestCase):
             command = install_payload(manifest, "venv", python_executable="python", dry_run=True)
 
         self.assertNotIn("--force-reinstall", command)
+
+    def test_install_payload_raises_clear_error_for_incompatible_python(self) -> None:
+        manifest = PayloadManifest(
+            version="1.6.46",
+            wheel_url="https://example.invalid/manifestguard-1.6.46-cp312-cp312-win_amd64.whl",
+            sha256="abc123",
+            python_requires=">=3.12",
+        )
+
+        with mock.patch(
+            "manifestguard_bootstrap.installer.sys.version_info",
+            new=mock.Mock(major=3, minor=13),
+        ):
+            with self.assertRaises(RuntimeError) as ctx:
+                install_payload(manifest, "user", python_executable="python", dry_run=True)
+
+        message = str(ctx.exception)
+        self.assertIn("Required by wheel: 3.12", message)
+        self.assertIn("py -3.12 -m manifestguard_bootstrap.cli install-protected --user", message)
 
     def test_fetch_manifest(self) -> None:
         payload = {

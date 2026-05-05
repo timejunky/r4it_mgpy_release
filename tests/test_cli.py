@@ -12,9 +12,11 @@ from manifestguard_bootstrap.cli import (
     _detect_ui_language,
     _print_first_run_guidance_once,
     _handoff_install,
+    main,
     _resolve_python_handoff_executable,
     _should_handoff_install,
 )
+from manifestguard_bootstrap.installer import PayloadManifest
 
 
 class CliTests(unittest.TestCase):
@@ -49,11 +51,31 @@ class CliTests(unittest.TestCase):
                 _print_first_run_guidance_once()
 
             self.assertTrue(marker.exists())
-            self.assertGreaterEqual(print_mock.call_count, 7)
+            self.assertGreaterEqual(print_mock.call_count, 8)
             first_line = print_mock.call_args_list[0].args[0]
             self.assertIn("bootstrap ManifestGuard", first_line)
             printed_lines = [call.args[0] for call in print_mock.call_args_list]
             self.assertTrue(any("check-update" in line for line in printed_lines))
+            self.assertTrue(any("3.12" in line for line in printed_lines))
+
+    def test_install_protected_returns_one_with_runtime_error(self) -> None:
+        manifest = PayloadManifest(
+            version="1.6.46",
+            wheel_url="https://example.invalid/manifestguard-1.6.46-cp312-cp312-win_amd64.whl",
+            sha256="abc123",
+            python_requires=">=3.12",
+        )
+        with mock.patch("manifestguard_bootstrap.cli._print_first_run_guidance_once"), mock.patch(
+            "manifestguard_bootstrap.cli.fetch_manifest",
+            return_value=manifest,
+        ), mock.patch(
+            "manifestguard_bootstrap.cli.install_payload",
+            side_effect=RuntimeError("requires python 3.12"),
+        ), mock.patch("builtins.print") as print_mock:
+            code = main(["install-protected", "--user", "--dry-run"])
+
+        self.assertEqual(code, 1)
+        print_mock.assert_called_with("requires python 3.12")
 
     def test_print_first_run_guidance_once_skips_when_marker_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

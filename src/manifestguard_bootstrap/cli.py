@@ -28,6 +28,7 @@ _WINDOWS_INSTALL_HANDOFF_ENV = "MANIFESTGUARD_BOOTSTRAP_INSTALL_HANDOFF"
 _FIRST_RUN_GUIDANCE_LINES: dict[str, list[str]] = {
     "en": [
         "ManifestGuard bootstrap is installed.",
+        "Current protected payload requires Python 3.12 (cp312).",
         "Recommended next step: manifestguard install-protected",
         "For user-wide install: manifestguard install-protected --user",
         "For current virtual environment: manifestguard install-protected --venv",
@@ -37,6 +38,7 @@ _FIRST_RUN_GUIDANCE_LINES: dict[str, list[str]] = {
     ],
     "de": [
         "ManifestGuard Bootstrap ist installiert.",
+        "Der aktuelle Protected-Payload erfordert Python 3.12 (cp312).",
         "Empfohlener nächster Schritt: manifestguard install-protected",
         "Für benutzerweite Installation: manifestguard install-protected --user",
         "Für die aktuelle virtuelle Umgebung: manifestguard install-protected --venv",
@@ -46,6 +48,7 @@ _FIRST_RUN_GUIDANCE_LINES: dict[str, list[str]] = {
     ],
     "fr": [
         "Le bootstrap ManifestGuard est installe.",
+        "Le payload protege actuel requiert Python 3.12 (cp312).",
         "Etape suivante recommandee: manifestguard install-protected",
         "Pour une installation utilisateur: manifestguard install-protected --user",
         "Pour l'environnement virtuel actif: manifestguard install-protected --venv",
@@ -55,6 +58,7 @@ _FIRST_RUN_GUIDANCE_LINES: dict[str, list[str]] = {
     ],
     "lb": [
         "ManifestGuard Bootstrap ass installéiert.",
+        "Den aktuelle Protected-Payload verlaangt Python 3.12 (cp312).",
         "Empfohlene nächste Schrëtt: manifestguard install-protected",
         "Fir eng Benotzer-Installatioun: manifestguard install-protected --user",
         "Fir dat aktuellt virtuellt Ëmfeld: manifestguard install-protected --venv",
@@ -64,6 +68,7 @@ _FIRST_RUN_GUIDANCE_LINES: dict[str, list[str]] = {
     ],
     "tr": [
         "ManifestGuard bootstrap kuruldu.",
+        "Guncel korumali payload Python 3.12 (cp312) gerektirir.",
         "Onerilen sonraki adim: manifestguard install-protected",
         "Kullanici kapsami kurulum icin: manifestguard install-protected --user",
         "Mevcut sanal ortam icin: manifestguard install-protected --venv",
@@ -247,7 +252,14 @@ def main(argv: list[str] | None = None) -> int:
         if os.name == "nt" and os.environ.get(_WINDOWS_INSTALL_HANDOFF_ENV) == "1":
             time.sleep(1.0)
         mode = detect_install_mode(args.user, args.venv)
-        command = install_payload(manifest, mode, dry_run=args.dry_run)
+        try:
+            command = install_payload(manifest, mode, dry_run=args.dry_run)
+        except RuntimeError as exc:
+            print(str(exc))
+            return 1
+        except subprocess.CalledProcessError as exc:
+            print(f"install-protected failed (exit={exc.returncode}).")
+            return exc.returncode or 1
         if args.dry_run:
             print(" ".join(command))
         return 0

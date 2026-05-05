@@ -28,6 +28,44 @@ class PayloadManifest:
     notes: str | None = None
 
 
+def _parse_cpython_tag_from_wheel_filename(wheel_name: str) -> tuple[int, int] | None:
+    stem = wheel_name[:-4] if wheel_name.endswith(".whl") else wheel_name
+    parts = stem.split("-")
+    if len(parts) < 5:
+        return None
+    python_tag = parts[-3]
+    if not python_tag.startswith("cp"):
+        return None
+
+    digits = python_tag[2:]
+    if not digits.isdigit() or len(digits) < 2:
+        return None
+
+    major = int(digits[0])
+    minor = int(digits[1:])
+    return major, minor
+
+
+def _assert_interpreter_matches_wheel(manifest: PayloadManifest, wheel_name: str, mode: str) -> None:
+    required = _parse_cpython_tag_from_wheel_filename(wheel_name)
+    if not required:
+        return
+
+    current = (sys.version_info.major, sys.version_info.minor)
+    if current == required:
+        return
+
+    mode_flag = "--user" if mode == "user" else "--venv"
+    raise RuntimeError(
+        "Protected payload wheel is not compatible with this interpreter.\n"
+        f"Current Python: {sys.version_info.major}.{sys.version_info.minor} ({sys.executable})\n"
+        f"Required by wheel: {required[0]}.{required[1]} ({wheel_name})\n"
+        f"Manifest python_requires: {manifest.python_requires or 'n/a'}\n"
+        "Use Python 3.12 explicitly, for example:\n"
+        f"  py -3.12 -m manifestguard_bootstrap.cli install-protected {mode_flag}"
+    )
+
+
 def build_version_manifest_path(
     payload_version: str,
     manifest_root: str = DEFAULT_MANIFEST_ROOT,
@@ -197,6 +235,7 @@ def install_payload(
     force_reinstall = installed_variant == "bootstrap-only" and installed_version == manifest.version
     with tempfile.TemporaryDirectory(prefix="manifestguard-bootstrap-") as temp_dir:
         wheel_name = Path(manifest.wheel_url).name
+        _assert_interpreter_matches_wheel(manifest, wheel_name, mode)
         wheel_path = Path(temp_dir) / wheel_name
         download_file(manifest.wheel_url, wheel_path)
         actual_hash = sha256_of_file(wheel_path)
