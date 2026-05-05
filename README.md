@@ -50,6 +50,16 @@ Install the protected payload into the active virtual environment if present, ot
 manifestguard install-protected
 ```
 
+Important for the currently shipped protected payload:
+
+- Use Python 3.12 for the protected install path (cp312 wheel).
+- On Windows prefer explicit interpreter calls for protected steps:
+
+```powershell
+py -3.12 -m manifestguard_bootstrap.cli install-protected --user
+py -3.12 -m manifestguard --version
+```
+
 Force a specific target mode:
 
 ```powershell
