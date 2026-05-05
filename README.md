@@ -13,7 +13,7 @@ The public PyPI package does not ship the protected ManifestGuard code. Instead,
 Versioning rule:
 
 - The public bootstrap package should normally use the same version as the protected ManifestGuard payload it installs.
-- If the bootstrap wrapper needs a packaging-only fix without a payload change, use a post-release such as `1.6.26.post1`.
+- If the bootstrap wrapper needs a packaging-only fix without a payload change, use a post-release such as `1.6.46.post1`.
 
 ## Commands
 
@@ -32,14 +32,14 @@ manifestguard show-manifest
 Show the manifest for a specific protected version:
 
 ```powershell
-manifestguard show-manifest --payload-version 1.6.26
+manifestguard show-manifest --payload-version 1.6.46
 ```
 
 Check whether the selected payload is newer than the currently installed `manifestguard` version:
 
 ```powershell
 manifestguard check-update
-manifestguard check-update --payload-version 1.6.26
+manifestguard check-update --payload-version 1.6.46
 ```
 
 If only the public bootstrap wrapper is installed, `check-update` reports `bootstrap-only` until the protected payload has actually been installed.
@@ -55,7 +55,7 @@ Force a specific target mode:
 ```powershell
 manifestguard install-protected --venv
 manifestguard install-protected --user
-manifestguard install-protected --payload-version 1.6.26
+manifestguard install-protected --payload-version 1.6.46
 ```
 
 ## Release Branch Layout
@@ -66,18 +66,18 @@ The `release` branch is expected to contain:
 manifestguard/
   latest/
     manifest.json
-    manifestguard-<version>-py3-none-any.whl
+    manifestguard-<version>-<python-tag>-<abi-tag>-<platform>.whl
     release.json
     SHA256SUMS.txt
   <version>/
     manifest.json
-    manifestguard-<version>-py3-none-any.whl
+    manifestguard-<version>-<python-tag>-<abi-tag>-<platform>.whl
     release.json
     SHA256SUMS.txt
 ```
 
 `manifestguard/latest/manifest.json` is the default bootstrap entrypoint.
-Version-specific commands such as `--payload-version 1.6.26` resolve to `manifestguard/1.6.26/manifest.json`.
+Version-specific commands such as `--payload-version 1.6.46` resolve to `manifestguard/1.6.46/manifest.json`.
 Each `manifest.json` must include the wheel URL and SHA256 hash.
 
 ## Helper Script
