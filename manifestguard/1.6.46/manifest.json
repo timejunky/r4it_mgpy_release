@@ -1,6 +1,6 @@
 {
     "version":  "1.6.46",
-    "wheel_url":  "https://raw.githubusercontent.com/timejunky/r4it_mgpy_release/release/manifestguard/latest/manifestguard-1.6.46-cp312-cp312-win_amd64.whl",
+    "wheel_url":  "https://raw.githubusercontent.com/timejunky/r4it_mgpy_release/release/manifestguard/1.6.46/manifestguard-1.6.46-cp312-cp312-win_amd64.whl",
     "sha256":  "d763ab9d430232dd87bc3f349dc44408d2daed4b49aecd8c59c19556e819474c",
     "python_requires":  ">=3.12",
     "notes":  "Protected PyArmor wheel for ManifestGuard (cp312/win_amd64)."

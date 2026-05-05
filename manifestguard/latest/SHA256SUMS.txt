@@ -1,1 +1,1 @@
-﻿87751588a900efdad59ec8076f9364df1b2ab05a31e4143863d524321548a2e8  manifestguard-1.6.32-py3-none-any.whl
+﻿d763ab9d430232dd87bc3f349dc44408d2daed4b49aecd8c59c19556e819474c  manifestguard-1.6.46-cp312-cp312-win_amd64.whl

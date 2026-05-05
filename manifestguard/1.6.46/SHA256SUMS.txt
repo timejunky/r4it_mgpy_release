@@ -1,0 +1,1 @@
+d763ab9d430232dd87bc3f349dc44408d2daed4b49aecd8c59c19556e819474c  manifestguard-1.6.46-cp312-cp312-win_amd64.whl

@@ -8,15 +8,15 @@ Layout:
 manifestguard/
   latest/
     manifest.json
-    manifestguard-1.6.26-py3-none-any.whl
+    manifestguard-<version>-<python-tag>-<abi-tag>-<platform>.whl
     SHA256SUMS.txt
   1.6.25/
     manifest.json
-    manifestguard-1.6.25-py3-none-any.whl
+    manifestguard-<version>-<python-tag>-<abi-tag>-<platform>.whl
     SHA256SUMS.txt
   1.6.26/
     manifest.json
-    manifestguard-1.6.26-py3-none-any.whl
+    manifestguard-<version>-<python-tag>-<abi-tag>-<platform>.whl
     SHA256SUMS.txt
 ```
 
