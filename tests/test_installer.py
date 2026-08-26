@@ -17,6 +17,7 @@ from manifestguard_bootstrap.installer import (
     detect_install_mode,
     fetch_manifest,
     get_update_status,
+    github_payload_fetch_allowed,
     install_payload,
     resolve_manifest_path,
     sha256_of_file,
@@ -181,9 +182,9 @@ class InstallerTests(unittest.TestCase):
         message = str(ctx.exception)
         self.assertIn("Required by wheel: 3.12", message)
         self.assertIn("py -3.12 -m pip install --user --upgrade manifestguard", message)
-        self.assertIn("py -3.12 -m manifestguard_bootstrap.cli install-protected --user", message)
+        self.assertIn("py -3.12 -m manifestguard license update-apply", message)
         self.assertIn("py -3.12 -m manifestguard --version", message)
-        self.assertIn("replaced by the protected ManifestGuard payload version 1.6.46", message)
+        self.assertIn("protected payload 1.6.46", message)
 
     def test_fetch_manifest(self) -> None:
         payload = {
@@ -203,6 +204,11 @@ class InstallerTests(unittest.TestCase):
             manifest,
             PayloadManifest(version="1.6.26", wheel_url="https://example.invalid/manifestguard-1.6.26.whl", sha256="abc123"),
         )
+
+
+    def test_github_payload_fetch_allowed_requires_override(self) -> None:
+        self.assertFalse(github_payload_fetch_allowed({}))
+        self.assertTrue(github_payload_fetch_allowed({"MGPY_ALLOW_GITHUB_BOOTSTRAP": "1"}))
 
 
 if __name__ == "__main__":

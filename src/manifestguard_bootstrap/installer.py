@@ -17,6 +17,21 @@ DEFAULT_BRANCH = "release"
 DEFAULT_MANIFEST_ROOT = "manifestguard"
 DEFAULT_MANIFEST_PATH = "manifestguard/latest/manifest.json"
 _MISSING = object()
+GITHUB_OVERRIDE_ENV = "MGPY_ALLOW_GITHUB_BOOTSTRAP"
+
+
+def github_payload_fetch_allowed(env: dict[str, str] | None = None) -> bool:
+    source = env if env is not None else os.environ
+    return str(source.get(GITHUB_OVERRIDE_ENV) or "").strip() in {"1", "true", "TRUE", "yes"}
+
+
+def zebra_delivery_message() -> str:
+    return (
+        "Trial/Pro is no longer fetched from GitHub. "
+        "Activate a R4IT token, then use My Licenses Downloads "
+        "or `py -3.12 -m manifestguard license update-apply`. "
+        "Operator override: set MGPY_ALLOW_GITHUB_BOOTSTRAP=1."
+    )
 
 
 @dataclass(frozen=True)
@@ -55,7 +70,6 @@ def _assert_interpreter_matches_wheel(manifest: PayloadManifest, wheel_name: str
     if current == required:
         return
 
-    mode_flag = "--user" if mode == "user" else "--venv"
     raise RuntimeError(
         "Protected payload wheel is not compatible with this interpreter.\n"
         f"Current Python: {sys.version_info.major}.{sys.version_info.minor} ({sys.executable})\n"
@@ -63,10 +77,11 @@ def _assert_interpreter_matches_wheel(manifest: PayloadManifest, wheel_name: str
         f"Manifest python_requires: {manifest.python_requires or 'n/a'}\n"
         "To continue, use Python 3.12 and make sure the bootstrap package is installed there:\n"
         "  py -3.12 -m pip install --user --upgrade manifestguard\n"
-        f"  py -3.12 -m manifestguard_bootstrap.cli install-protected {mode_flag}\n"
+        "  Activate a R4IT token, then My Licenses ZIP or:\n"
+        "  py -3.12 -m manifestguard license update-apply\n"
         "Then verify:\n"
         "  py -3.12 -m manifestguard --version\n"
-        f"Note: after install-protected, the public bootstrap package is replaced by the protected ManifestGuard payload version {manifest.version}."
+        f"Note: Trial/Pro replaces the public bootstrap with the protected payload {manifest.version}. GitHub install-protected is retired."
     )
 
 

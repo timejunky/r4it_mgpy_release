@@ -19,8 +19,10 @@ from .installer import (
     detect_install_mode,
     fetch_manifest,
     get_update_status,
+    github_payload_fetch_allowed,
     install_payload,
     resolve_manifest_path,
+    zebra_delivery_message,
 )
 
 _WINDOWS_INSTALL_HANDOFF_ENV = "MANIFESTGUARD_BOOTSTRAP_INSTALL_HANDOFF"
@@ -28,53 +30,53 @@ _WINDOWS_INSTALL_HANDOFF_ENV = "MANIFESTGUARD_BOOTSTRAP_INSTALL_HANDOFF"
 _FIRST_RUN_GUIDANCE_LINES: dict[str, list[str]] = {
     "en": [
         "ManifestGuard bootstrap is installed.",
+        "This PyPI package is bootstrap only. It is not Trial/Pro.",
         "Current protected payload requires Python 3.12 (cp312).",
-        "Recommended next step: manifestguard install-protected",
-        "For user-wide install: manifestguard install-protected --user",
-        "For current virtual environment: manifestguard install-protected --venv",
-        "Inspect payload metadata: manifestguard show-manifest",
-        "Check updates manually: manifestguard check-update",
-        "After protected install, verify runtime: python -m manifestguard --version",
+        "Recommended next step: buy/activate, then My Licenses ZIP or `py -3.12 -m manifestguard license update-apply`.",
+        "Free stays `pip install manifestguard` (bootstrap only).",
+        "Do not use `pip install --upgrade manifestguard` to update Pro.",
+        "GitHub install-protected is retired (override: MGPY_ALLOW_GITHUB_BOOTSTRAP=1).",
+        "After protected install, verify: py -3.12 -m manifestguard --version",
     ],
     "de": [
         "ManifestGuard Bootstrap ist installiert.",
+        "Dieses PyPI-Paket ist nur Bootstrap. Es ist nicht Trial/Pro.",
         "Der aktuelle Protected-Payload erfordert Python 3.12 (cp312).",
-        "Empfohlener nächster Schritt: manifestguard install-protected",
-        "Für benutzerweite Installation: manifestguard install-protected --user",
-        "Für die aktuelle virtuelle Umgebung: manifestguard install-protected --venv",
-        "Payload-Metadaten anzeigen: manifestguard show-manifest",
-        "Updates manuell prüfen: manifestguard check-update",
-        "Nach Protected-Install Runtime prüfen: python -m manifestguard --version",
+        "Empfohlener nächster Schritt: aktivieren, dann My Licenses ZIP oder `py -3.12 -m manifestguard license update-apply`.",
+        "Free bleibt `pip install manifestguard` (nur Bootstrap).",
+        "Pro nicht mit `pip install --upgrade manifestguard` aktualisieren.",
+        "GitHub install-protected ist abgeschaltet (Override: MGPY_ALLOW_GITHUB_BOOTSTRAP=1).",
+        "Nach Protected-Install prüfen: py -3.12 -m manifestguard --version",
     ],
     "fr": [
         "Le bootstrap ManifestGuard est installe.",
+        "Ce paquet PyPI est uniquement un bootstrap. Ce n'est pas Trial/Pro.",
         "Le payload protege actuel requiert Python 3.12 (cp312).",
-        "Etape suivante recommandee: manifestguard install-protected",
-        "Pour une installation utilisateur: manifestguard install-protected --user",
-        "Pour l'environnement virtuel actif: manifestguard install-protected --venv",
-        "Afficher les metadonnees du payload: manifestguard show-manifest",
-        "Verifier les mises a jour manuellement: manifestguard check-update",
-        "Apres installation protegee, verifier le runtime: python -m manifestguard --version",
+        "Etape suivante: activer, puis ZIP My Licenses ou `py -3.12 -m manifestguard license update-apply`.",
+        "Free reste `pip install manifestguard` (bootstrap seulement).",
+        "N'utilisez pas `pip install --upgrade manifestguard` pour Pro.",
+        "GitHub install-protected est retire (override: MGPY_ALLOW_GITHUB_BOOTSTRAP=1).",
+        "Apres installation protegee: py -3.12 -m manifestguard --version",
     ],
     "lb": [
         "ManifestGuard Bootstrap ass installéiert.",
+        "Dëst PyPI-Paket ass nëmme Bootstrap. Et ass net Trial/Pro.",
         "Den aktuelle Protected-Payload verlaangt Python 3.12 (cp312).",
-        "Empfohlene nächste Schrëtt: manifestguard install-protected",
-        "Fir eng Benotzer-Installatioun: manifestguard install-protected --user",
-        "Fir dat aktuellt virtuellt Ëmfeld: manifestguard install-protected --venv",
-        "Payload-Metadonnéeën weisen: manifestguard show-manifest",
-        "Updates manuell iwwerpréiwen: manifestguard check-update",
-        "No der Protected-Installatioun Runtime iwwerpréiwen: python -m manifestguard --version",
+        "Nächste Schrëtt: aktivéieren, dann My Licenses ZIP oder `py -3.12 -m manifestguard license update-apply`.",
+        "Free bleift `pip install manifestguard` (nëmme Bootstrap).",
+        "Pro net mat `pip install --upgrade manifestguard` aktualiséieren.",
+        "GitHub install-protected ass ofgeschalt (Override: MGPY_ALLOW_GITHUB_BOOTSTRAP=1).",
+        "No der Protected-Installatioun: py -3.12 -m manifestguard --version",
     ],
     "tr": [
         "ManifestGuard bootstrap kuruldu.",
+        "Bu PyPI paketi yalnizca bootstrap. Trial/Pro degildir.",
         "Guncel korumali payload Python 3.12 (cp312) gerektirir.",
-        "Onerilen sonraki adim: manifestguard install-protected",
-        "Kullanici kapsami kurulum icin: manifestguard install-protected --user",
-        "Mevcut sanal ortam icin: manifestguard install-protected --venv",
-        "Payload metaverisini goster: manifestguard show-manifest",
-        "Guncellemeleri elle kontrol et: manifestguard check-update",
-        "Korumali kurulumdan sonra runtime'i dogrula: python -m manifestguard --version",
+        "Sonraki adim: etkinlestir, sonra My Licenses ZIP veya `py -3.12 -m manifestguard license update-apply`.",
+        "Free `pip install manifestguard` olarak kalir (yalnizca bootstrap).",
+        "Pro icin `pip install --upgrade manifestguard` kullanmayin.",
+        "GitHub install-protected kapatildi (override: MGPY_ALLOW_GITHUB_BOOTSTRAP=1).",
+        "Korumali kurulumdan sonra: py -3.12 -m manifestguard --version",
     ],
 }
 
@@ -122,6 +124,13 @@ def _print_first_run_guidance_once() -> None:
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(__version__, encoding="utf-8")
     except OSError:
+        return
+
+    try:
+        from .zebra_pypi import maybe_report_pypi_bootstrap
+
+        maybe_report_pypi_bootstrap(__version__)
+    except Exception:
         return
 
 
@@ -203,7 +212,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     install_protected = subparsers.add_parser(
         "install-protected",
-        help="Download and install the protected ManifestGuard wheel from GitHub",
+        help="Download and install the protected ManifestGuard wheel (operator GitHub override only)",
     )
     _add_common_manifest_args(install_protected)
     install_protected.add_argument("--user", action="store_true", help="Install to the user site")
@@ -219,6 +228,10 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(argv if argv is not None else sys.argv[1:])
 
     _print_first_run_guidance_once()
+
+    if not github_payload_fetch_allowed():
+        print(zebra_delivery_message())
+        return 2
 
     manifest_path = resolve_manifest_path(args.manifest_path, getattr(args, "payload_version", None))
     manifest_url = build_raw_manifest_url(args.repository, args.branch, manifest_path)

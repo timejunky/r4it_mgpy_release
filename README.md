@@ -1,72 +1,55 @@
 # manifestguard
 
-Public bootstrap package for the protected ManifestGuard payload.
+Public **bootstrap** package for ManifestGuard. It does **not** ship the scanner.
+
+- Free: `pip install manifestguard` (this wrapper only).
+- Trial/Pro: activate a R4IT token, then **My Licenses** ZIP or `py -3.12 -m manifestguard license update-apply`.
+- Do **not** use `pip install --upgrade manifestguard` to update Pro. That command refreshes this bootstrap and can replace a paid install.
 
 Purpose:
 
 - `dev` branch: source of truth for the public bootstrap installer.
 - `main` branch: reviewed source ready for public release.
-- `release` branch: protected payload artifacts only (PyArmor-built wheel + metadata).
+- `release` branch: protected payload artifacts (operator / GitHub override only).
 
-The public PyPI package does not ship the protected ManifestGuard code. Instead, it provides a CLI that can fetch the latest protected wheel from this repository's `release` branch and install it into the current virtual environment or user site.
+Twine uploads must come from this repository. The MGPY monorepo must never be published to PyPI.
 
 Versioning rule:
 
-- The public bootstrap package should normally use the same version as the protected ManifestGuard payload it installs.
-- If the bootstrap wrapper needs a packaging-only fix without a payload change, use a post-release such as `1.6.46.post1`.
+- Wrapper-only public bumps stay on the last public bootstrap line as `.postN` (this release: `1.6.46.post5`).
+- Do not retag this package as the current Pro ZIP version (for example `1.6.61`). A higher bootstrap version would make `pip install --upgrade manifestguard` look newer than an older Pro install and replace the scanner with this thin wrapper.
+- The protected payload on Zebra is versioned independently (`mgpy-1.6.61` and later).
 
-## Commands
-
-Create a local editable install of the bootstrap package:
+## Customer path
 
 ```powershell
-python -m pip install -e .
+py -3.12 -m pip install --user manifestguard
+py -3.12 -m manifestguard --version
 ```
 
-Show the protected payload manifest configured for download:
+Then buy/activate. Apply Trial/Pro with My Licenses or:
 
 ```powershell
+py -3.12 -m manifestguard license update-apply
+```
+
+Optional first-run lifecycle ping (no license key; fail-open): set `MGPY_ACCEPT_ZEBRA_LIFECYCLE=1`. Opt out: `MGPY_SKIP_ZEBRA_LIFECYCLE=1`.
+
+## Operator GitHub override
+
+`show-manifest`, `check-update`, and `install-protected` fetch the `release` branch and stay retired unless `MGPY_ALLOW_GITHUB_BOOTSTRAP=1`.
+
+```powershell
+$env:MGPY_ALLOW_GITHUB_BOOTSTRAP = "1"
 manifestguard show-manifest
-```
-
-Show the manifest for a specific protected version:
-
-```powershell
-manifestguard show-manifest --payload-version 1.6.46
-```
-
-Check whether the selected payload is newer than the currently installed `manifestguard` version:
-
-```powershell
-manifestguard check-update
 manifestguard check-update --payload-version 1.6.46
-```
-
-If only the public bootstrap wrapper is installed, `check-update` reports `bootstrap-only` until the protected payload has actually been installed.
-
-Install the protected payload into the active virtual environment if present, otherwise user-wide:
-
-```powershell
-manifestguard install-protected
+py -3.12 -m manifestguard_bootstrap.cli install-protected --user
 ```
 
 Important for the currently shipped protected payload:
 
 - Use Python 3.12 for the protected install path (cp312 wheel).
-- On Windows prefer explicit interpreter calls for protected steps:
-
-```powershell
-py -3.12 -m manifestguard_bootstrap.cli install-protected --user
-py -3.12 -m manifestguard --version
-```
-
-Force a specific target mode:
-
-```powershell
-manifestguard install-protected --venv
-manifestguard install-protected --user
-manifestguard install-protected --payload-version 1.6.46
-```
+- On Windows prefer explicit interpreter calls for protected steps.
 
 ## Release Branch Layout
 

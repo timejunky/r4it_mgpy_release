@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manifestguard"
-version = "1.6.46.post4"
-description = "Public bootstrap installer for the protected ManifestGuard release payload"
+version = "1.6.46.post5"
+description = "Public bootstrap for ManifestGuard. Trial/Pro is Zebra, not this package."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }

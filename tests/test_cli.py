@@ -46,17 +46,43 @@ class CliTests(unittest.TestCase):
             marker = Path(tmp_dir) / "bootstrap-first-run.txt"
             with mock.patch("manifestguard_bootstrap.cli._first_run_marker_path", return_value=marker), mock.patch(
                 "manifestguard_bootstrap.cli._detect_ui_language",
-                return_value="fr",
+                return_value="en",
             ), mock.patch("builtins.print") as print_mock:
                 _print_first_run_guidance_once()
 
             self.assertTrue(marker.exists())
             self.assertGreaterEqual(print_mock.call_count, 8)
             first_line = print_mock.call_args_list[0].args[0]
-            self.assertIn("bootstrap ManifestGuard", first_line)
+            self.assertIn("bootstrap is installed", first_line)
             printed_lines = [call.args[0] for call in print_mock.call_args_list]
-            self.assertTrue(any("check-update" in line for line in printed_lines))
+            self.assertTrue(any("bootstrap only" in line for line in printed_lines))
             self.assertTrue(any("3.12" in line for line in printed_lines))
+            self.assertTrue(any("update-apply" in line for line in printed_lines))
+            self.assertTrue(any("pip install --upgrade" in line for line in printed_lines))
+
+    def test_install_protected_refuses_github_without_override(self) -> None:
+        with mock.patch("manifestguard_bootstrap.cli._print_first_run_guidance_once"), mock.patch.dict(
+            os.environ, {"MGPY_ALLOW_GITHUB_BOOTSTRAP": ""}, clear=False
+        ), mock.patch("builtins.print") as print_mock:
+            code = main(["install-protected", "--user"])
+
+        self.assertEqual(code, 2)
+        printed = " ".join(str(call.args[0]) for call in print_mock.call_args_list)
+        self.assertIn("My Licenses", printed)
+        self.assertIn("MGPY_ALLOW_GITHUB_BOOTSTRAP", printed)
+
+    def test_show_manifest_refuses_github_without_override(self) -> None:
+        with mock.patch("manifestguard_bootstrap.cli._print_first_run_guidance_once"), mock.patch.dict(
+            os.environ, {"MGPY_ALLOW_GITHUB_BOOTSTRAP": ""}, clear=False
+        ), mock.patch("manifestguard_bootstrap.cli.fetch_manifest") as fetch_mock, mock.patch(
+            "builtins.print"
+        ) as print_mock:
+            code = main(["show-manifest"])
+
+        self.assertEqual(code, 2)
+        fetch_mock.assert_not_called()
+        printed = " ".join(str(call.args[0]) for call in print_mock.call_args_list)
+        self.assertIn("update-apply", printed)
 
     def test_install_protected_returns_one_with_runtime_error(self) -> None:
         manifest = PayloadManifest(
@@ -65,7 +91,9 @@ class CliTests(unittest.TestCase):
             sha256="abc123",
             python_requires=">=3.12",
         )
-        with mock.patch("manifestguard_bootstrap.cli._print_first_run_guidance_once"), mock.patch(
+        with mock.patch.dict(os.environ, {"MGPY_ALLOW_GITHUB_BOOTSTRAP": "1"}), mock.patch(
+            "manifestguard_bootstrap.cli._print_first_run_guidance_once"
+        ), mock.patch(
             "manifestguard_bootstrap.cli.fetch_manifest",
             return_value=manifest,
         ), mock.patch(
@@ -84,7 +112,9 @@ class CliTests(unittest.TestCase):
             sha256="abc123",
             python_requires=">=3.12",
         )
-        with mock.patch("manifestguard_bootstrap.cli._print_first_run_guidance_once"), mock.patch(
+        with mock.patch.dict(os.environ, {"MGPY_ALLOW_GITHUB_BOOTSTRAP": "1"}), mock.patch(
+            "manifestguard_bootstrap.cli._print_first_run_guidance_once"
+        ), mock.patch(
             "manifestguard_bootstrap.cli.fetch_manifest",
             return_value=manifest,
         ), mock.patch(
