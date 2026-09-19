@@ -1,0 +1,133 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ready-4-it/r4it_manifest_guard_vs/main/mgvs/schemas/manifestguard.schema.json",
+  "version": "0.5.3",
+  "enabled": true,
+  "extended": true,
+  "accessLevel": "balanced",
+  "recommended_tests": [
+    "baseline_comparison",
+    "bugfixes",
+    "complexity",
+    "coverage",
+    "dependencies",
+    "licensing",
+    "manifest_check",
+    "packaging",
+    "sbom",
+    "security"
+  ],
+  "recommendedTests": [
+    "baseline_comparison",
+    "bugfixes",
+    "complexity",
+    "coverage",
+    "dependencies",
+    "licensing",
+    "manifest_check",
+    "packaging",
+    "sbom",
+    "security"
+  ],
+  "ignorePatterns": [
+    ".git/**",
+    ".manifestguard/**",
+    ".mgpy/cache/**",
+    ".pytest_cache/**",
+    ".ruff_cache/**",
+    ".mypy_cache/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    ".venv/**",
+    "venv/**",
+    "build/**",
+    "dist/**",
+    "*.egg-info/**",
+    "htmlcov/**",
+    "coverage.json",
+    ".coverage",
+    "manifestguard-report*.json"
+  ],
+  "extensionDir": ".",
+  "settings": {
+    "manifest_file": "pyproject.toml"
+  },
+  "python": {
+    "minVersion": "3.10"
+  },
+  "complexity": {
+    "threshold": 15,
+    "includeTests": false,
+    "maxFileLinesHigh": 600,
+    "maxFileLinesCritical": 1200
+  },
+  "coverage": {
+    "threshold": 80,
+    "fail_under": 70,
+    "include": [
+      "src/**/*.py"
+    ],
+    "exclude": [
+      "tests/**",
+      "**/__pycache__/**",
+      "**/*.pyc",
+      ".venv/**",
+      "venv/**",
+      "build/**",
+      "dist/**"
+    ]
+  },
+  "testConfig": {
+    "deepAnalysisMode": true,
+    "developmentMode": false,
+    "coverage": {
+      "deepAnalysisMode": true
+    },
+    "complexity": {
+      "deepAnalysisMode": true,
+      "enabled": true,
+      "threshold": 15,
+      "includeTests": false
+    },
+    "bugfixes": {
+      "deepAnalysisMode": true
+    }
+  },
+  "lifecycle": {
+    "minConfidence": "high",
+    "listBloat": {
+      "extraWeakNames": [],
+      "extraStrongNames": []
+    },
+    "suppress": []
+  },
+  "autoFix": {
+    "enabled": true,
+    "maxCycles": 3
+  },
+  "quickfix": {
+    "backup": {
+      "mode": "git",
+      "dir": ".manifestguard-backups/",
+      "requireCleanGit": false,
+      "autoCommit": false,
+      "maxBackups": 50,
+      "dryRun": false
+    }
+  },
+  "configSchemaRules": {
+    "enforceAllDeclared": true,
+    "enforceAllUsed": true
+  },
+  "dummyRecognition": {
+    "markerOnlySeverity": "warn"
+  },
+  "preScan": {
+    "enabled": false,
+    "commands": []
+  },
+  "generated_by": {
+    "tool": "manifestguard",
+    "version": "1.6.65",
+    "optimized": "2026-09-19"
+  }
+}
